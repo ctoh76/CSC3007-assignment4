@@ -9,6 +9,10 @@
 </head>
 
 <body>
+    <h2>Singapore Population Map</h2>
+
+    <div id="tooltip" style="position: absolute; left: 40px;
+        top: 60px;"></div>
     <svg viewBox="0 0 800 800"></svg>
     <script src="./index_files/d3.v7.min.js.download"></script>
 
@@ -31,52 +35,67 @@
             console.log(data[0]); //links
             console.log(data[1]); //cases
 
-            let data1 = [];
-            for (let i = 0; i < 20; i++) {
-                let obj = {};
-                data1.push(obj);
-            }
+            let linkpath = svg.append("g")
+                .attr("id", "links")
+                .selectAll("path")
+                .data(data[0])
+                .enter()
+                .append("path")
+                .attr("fill", "none")
+                .attr("stroke", "black")
+                .on("mouseover", (event, d) => {
+                    d3.select("#tooltip")
+                        .html("<b>Subzone Name: </b>" + d.source + "<br><b>Population: </b>" + d.target);
+                    //.text(d.properties.Name);
+                    let path = d3.select(event.currentTarget);
+                    path.style("stroke", "red").style("stroke-width", 2);
+                })
+                .on("mouseout", (event, d) => {
+                    d3.select("#tooltip")
+                        .text("");
+                    let path = d3.select(event.currentTarget);
+                    path.style("stroke", "none");
+                });
 
             let node = svg.append("g")
                 .attr("id", "nodes")
                 .selectAll("circle")
-                .data(data1)
+                .data(data[1])
                 .enter()
                 .append("circle")
                 .attr("r", 25)
-                .style("fill", "steelblue");
+                .style("fill", "steelblue")
+                .on("mouseover", (event, d) => {
+                    d3.select("#tooltip")
+                        .html("<b>Subzone Name: </b>" + d.gender + "<br><b>Population: </b>" + d.nationality);
+                    let path = d3.select(event.currentTarget);
+                    path.style("stroke", "red").style("stroke-width", 2);
+                })
+                .on("mouseout", (event, d) => {
+                    d3.select("#tooltip")
+                        .text("");
+                    let path = d3.select(event.currentTarget);
+                    path.style("stroke", "none");
+                });
 
             let simulation = d3.forceSimulation()
-                .nodes(data1)
-                .force("charge", d3.forceManyBody().strength(10))
-                .force("collide", d3.forceCollide().strength(1).radius(10))
-                .force("r", d3.forceRadial(200, width / 2, height / 2).strength(0.1))
-                .alphaMin(0.1)
+                .nodes(data[1])
+                .force("x", d3.forceX().strength(0.5).x(width / 2))
+                .force("y", d3.forceY().strength(0.2).y(height / 2))
+                .force("link", d3.forceLink(data[0]).id(d => d.id)
+                    .distance(50)
+                    .strength(0.5))
+                .force("charge", d3.forceManyBody().strength(20))
+                .force("collide", d3.forceCollide().strength(1).radius(30))
                 .on("tick", d => {
                     node
                         .attr("cx", d => d.x)
                         .attr("cy", d => d.y);
-                }).call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended));
 
-            function dragstarted(event, d) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
+                    linkpath
+                        .attr("d", d => "M" + d.source.x + "," + d.source.y + " " + d.target.x + "," + d.target.y);
+                });
 
-            function dragged(event, d) {
-                d.fx = event.x;
-                d.fy = event.y;
-            }
-
-            function dragended(event, d) {
-                if (!event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
         })
     </script>
 
